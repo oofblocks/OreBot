@@ -237,16 +237,85 @@ return {
 
             local count = 0
             for ore, amount in pairs(inventoryCopy) do
-                count = count + 1
-                if count == 10 then
-                    currentPage = currentPage + 1
-                    table.insert(pages, {}, currentPage)
+                if amount > 0 then
+                    count = count + 1
+                    if count > 2 then
+                        currentPage = currentPage + 1
+                        table.insert(pages, currentPage, {})
+                        count = 0
+                    end
+                    table.insert(pages[currentPage], {Ore = ore; Amount = amount})
                 end
-                table.insert(pages[currentPage], {Ore = ore; Amount = amount})
+            end
+            
+            local page = 1
+
+            function getString()
+                local string = ""
+                for _, data in pairs(pages[page]) do
+                    string = string .. "<:" .. data.Ore .. ":" .. textures[data.Ore] .. "> | " .. data.Ore .. ": " .. data.Amount .. "\n"
+                end
+                if string == "" then
+                    string = "You have no ores!"
+                end
+                return string
             end
 
-            currentPage = 1
-            
+            local typeStr = " "
+            if type ~= "" then
+                typeStr = " " .. type .. " "
+            end
+
+            local inventory = message:reply{
+                embed = {
+                    fields = {
+                        {name = message.author.name .. "'s" .. typeStr .. "Inventory"; value = getString()}
+                    };
+                    thumbnail = {
+                        url = message.author.avatarURL
+                    };
+                    footer = {
+                        text = "Showing page " .. tostring(page) .. " of " .. tostring(#pages)
+                    };
+                    color = discordia.Color.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255)).value
+                }
+            }
+
+            inventory:addReaction("\226\172\133\239\184\143")
+            inventory:addReaction("\226\158\161\239\184\143")
+
+            client:on('reactionAdd', function(reaction, userid)
+                if userid == client.user.id then return end
+                local x = page
+
+                print(reaction.emojiHash)
+
+                if reaction.message.id == inventory.message.id and userid == memberId then
+                    if reaction.emojiHash == "\226\172\133\239\184\143" then
+                        if page > 1 then
+                            page = page - 1
+                        end
+                    elseif reaction.emojiHash == "\226\158\161\239\184\143" then
+                        if page < #pages then
+                            page = page + 1
+                        end
+                    end
+                end
+                if page ~= x then
+                    inventory:setEmbed{
+                        fields = {
+                            {name = message.author.name .. "'s" .. typeStr .. "Inventory"; value = getString()}
+                        };
+                        thumbnail = {
+                            url = message.author.avatarURL
+                        };
+                        footer = {
+                            text = "Showing page " .. tostring(page) .. " of " .. tostring(#pages)
+                        };
+                        color = discordia.Color.fromRGB(math.random(0,255), math.random(0,255), math.random(0,255)).value
+                    }
+                end
+            end)         
         end
     }
 }
